@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Конфигурация базы данных
@@ -14,17 +13,17 @@ $environment = $_ENV['APP_ENV'] ?? 'production';
 $database_config = [
     'development' => [
         'host' => 'localhost',
-        'database' => 'texttabs_dev',
-        'username' => 'root',
-        'password' => '',
+        'database' => 'test2',
+        'username' => 'test2',
+        'password' => 'DxhwsBpswfTYn82c',
         'charset' => 'utf8mb4',
         'port' => 3306
     ],
     'production' => [
-        'host' => 'localhost', // Обычно localhost на shared hosting
-        'database' => 'your_database_name', // Замените на реальное имя БД
-        'username' => 'your_db_username',   // Замените на реального пользователя БД
-        'password' => 'your_db_password',   // Замените на реальный пароль
+        'host' => 'localhost',
+        'database' => 'test2',
+        'username' => 'test2',
+        'password' => 'DxhwsBpswfTYn82c',
         'charset' => 'utf8mb4',
         'port' => 3306
     ]
