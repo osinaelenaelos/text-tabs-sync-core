@@ -34,7 +34,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       icon: Users,
     },
     {
-      name: 'Страницы',
+      name: 'Страницы2',
       href: '/pages',
       icon: FileText,
     },
