@@ -17,6 +17,10 @@ switch ($action) {
         saveDatabaseConfig($input['config']);
         break;
         
+    case 'create_tables':
+        createDatabaseTables($input['config']);
+        break;
+        
     default:
         http_response_code(400);
         echo json_encode([
@@ -50,6 +54,132 @@ function testDatabaseConnection($config) {
         echo json_encode([
             'success' => false,
             'message' => 'Ошибка подключения: ' . $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Создание таблиц в базе данных
+ */
+function createDatabaseTables($config) {
+    try {
+        $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset=utf8mb4";
+        $pdo = new PDO($dsn, $config['username'], $config['password'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+        ]);
+        
+        // SQL для создания таблиц
+        $tables = [
+            'users' => "
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    email_verification_token VARCHAR(100) DEFAULT NULL,
+                    email_verified_at TIMESTAMP NULL DEFAULT NULL,
+                    password_reset_token VARCHAR(100) DEFAULT NULL,
+                    password_reset_expires_at TIMESTAMP NULL DEFAULT NULL,
+                    status ENUM('pending', 'verified', 'blocked') DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_email (email),
+                    INDEX idx_status (status),
+                    INDEX idx_verification_token (email_verification_token),
+                    INDEX idx_reset_token (password_reset_token)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ",
+            
+            'user_pages' => "
+                CREATE TABLE IF NOT EXISTS user_pages (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    title VARCHAR(500) NOT NULL,
+                    content LONGTEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_created_at (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ",
+            
+            'admin_users' => "
+                CREATE TABLE IF NOT EXISTS admin_users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP NULL DEFAULT NULL,
+                    INDEX idx_username (username)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ",
+            
+            'system_settings' => "
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    setting_key VARCHAR(100) NOT NULL UNIQUE,
+                    setting_value TEXT NOT NULL,
+                    description TEXT DEFAULT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_key (setting_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            "
+        ];
+        
+        // Создаем таблицы
+        $createdTables = [];
+        foreach ($tables as $tableName => $sql) {
+            $pdo->exec($sql);
+            $createdTables[] = $tableName;
+        }
+        
+        // Создаем первого администратора если его нет
+        $adminCheck = $pdo->query("SELECT COUNT(*) as count FROM admin_users")->fetch();
+        if ($adminCheck['count'] == 0) {
+            $adminPassword = password_hash('admin123', PASSWORD_DEFAULT);
+            $pdo->prepare("
+                INSERT INTO admin_users (username, password_hash, email) 
+                VALUES ('admin', ?, 'admin@example.com')
+            ")->execute([$adminPassword]);
+            $createdTables[] = 'admin_users (с пользователем admin/admin123)';
+        }
+        
+        // Добавляем базовые настройки если их нет
+        $settingsCheck = $pdo->query("SELECT COUNT(*) as count FROM system_settings")->fetch();
+        if ($settingsCheck['count'] == 0) {
+            $defaultSettings = [
+                ['smtp_host', '', 'SMTP сервер для отправки почты'],
+                ['smtp_port', '587', 'Порт SMTP сервера'],
+                ['smtp_username', '', 'Имя пользователя SMTP'],
+                ['smtp_password', '', 'Пароль SMTP'],
+                ['smtp_encryption', 'tls', 'Тип шифрования (tls/ssl)'],
+                ['site_url', 'https://yourdomain.com', 'URL сайта'],
+                ['admin_email', 'admin@yourdomain.com', 'Email администратора']
+            ];
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO system_settings (setting_key, setting_value, description) 
+                VALUES (?, ?, ?)
+            ");
+            
+            foreach ($defaultSettings as $setting) {
+                $stmt->execute($setting);
+            }
+            $createdTables[] = 'system_settings (с базовыми настройками)';
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Таблицы успешно созданы: ' . implode(', ', $createdTables)
+        ]);
+        
+    } catch (PDOException $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Ошибка при создании таблиц: ' . $e->getMessage()
         ]);
     }
 }

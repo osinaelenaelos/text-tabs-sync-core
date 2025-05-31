@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Database, TestTube, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Database, TestTube, Save, AlertCircle, CheckCircle, TableProperties } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -28,6 +28,7 @@ const Settings = () => {
 
   const [loading, setLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
+  const [createTablesLoading, setCreateTablesLoading] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleInputChange = (field: keyof DatabaseConfig, value: string | number) => {
@@ -89,6 +90,46 @@ const Settings = () => {
     }
   };
 
+  const createTables = async () => {
+    setCreateTablesLoading(true);
+
+    try {
+      const response = await fetch('/api/settings.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create_tables',
+          config: dbConfig
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Успех",
+          description: result.message || "Таблицы успешно созданы!",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: result.message || "Не удалось создать таблицы",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Ошибка при создании таблиц",
+        variant: "destructive",
+      });
+    } finally {
+      setCreateTablesLoading(false);
+    }
+  };
+
   const saveSettings = async () => {
     setLoading(true);
 
@@ -127,6 +168,15 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (field: keyof DatabaseConfig, value: string | number) => {
+    setDbConfig(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Сбрасываем результат теста при изменении настроек
+    setTestResult(null);
   };
 
   return (
@@ -226,6 +276,15 @@ const Settings = () => {
             >
               <TestTube className="mr-2 h-4 w-4" />
               {testLoading ? 'Тестирование...' : 'Тестировать подключение'}
+            </Button>
+            
+            <Button
+              onClick={createTables}
+              disabled={createTablesLoading}
+              variant="outline"
+            >
+              <TableProperties className="mr-2 h-4 w-4" />
+              {createTablesLoading ? 'Создание...' : 'Создать таблицы'}
             </Button>
             
             <Button

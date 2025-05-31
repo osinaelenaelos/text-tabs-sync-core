@@ -23,10 +23,12 @@ import {
 import { useApi } from '@/hooks/useApi';
 import { userService, UserFilters } from '@/services/userService';
 import { toast } from '@/components/ui/use-toast';
+import CreateUserDialog from '@/components/CreateUserDialog';
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Получаем данные пользователей через API
   const { data: usersData, loading, error, refetch } = useApi(
@@ -44,6 +46,9 @@ const Users = () => {
     if (status === 'verified') {
       return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Подтвержден</Badge>;
     }
+    if (status === 'blocked') {
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Заблокирован</Badge>;
+    }
     return <Badge variant="secondary">Ожидает</Badge>;
   };
 
@@ -57,6 +62,10 @@ const Users = () => {
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
+  };
+
+  const handleUserCreated = () => {
+    refetch();
   };
 
   if (error) {
@@ -77,7 +86,7 @@ const Users = () => {
             Управление пользователями расширения Text Tabs
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setCreateDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           Добавить пользователя
         </Button>
@@ -103,6 +112,7 @@ const Users = () => {
             <SelectItem value="all">Все статусы</SelectItem>
             <SelectItem value="verified">Подтвержденные</SelectItem>
             <SelectItem value="pending">Ожидающие</SelectItem>
+            <SelectItem value="blocked">Заблокированные</SelectItem>
           </SelectContent>
         </Select>
 
@@ -190,6 +200,13 @@ const Users = () => {
           </Button>
         </div>
       </div>
+
+      {/* Create User Dialog */}
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onUserCreated={handleUserCreated}
+      />
     </div>
   );
 };
