@@ -27,7 +27,7 @@ const Dashboard = () => {
   // Данные по умолчанию пока API не загружен
   const stats = dashboardData?.stats ? [
     {
-      title: "Всего пользователей",
+      title: "Всего пользователей2",
       value: dashboardData.stats.totalUsers.toLocaleString(),
       description: "+12% за месяц",
       icon: Users,
