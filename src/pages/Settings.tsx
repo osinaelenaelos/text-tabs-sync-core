@@ -170,15 +170,6 @@ const Settings = () => {
     }
   };
 
-  const handleInputChange = (field: keyof DatabaseConfig, value: string | number) => {
-    setDbConfig(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    // Сбрасываем результат теста при изменении настроек
-    setTestResult(null);
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
