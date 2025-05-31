@@ -12,7 +12,7 @@ $environment = $_ENV['APP_ENV'] ?? 'production';
 // Настройки для разных окружений
 $database_config = [
     'development' => [
-        'host' => 'localhost',
+        'host' => '193.228.110.131',
         'database' => 'test2',
         'username' => 'test2',
         'password' => 'DxhwsBpswfTYn82c',
@@ -20,7 +20,7 @@ $database_config = [
         'port' => 3306
     ],
     'production' => [
-        'host' => 'localhost',
+        'host' => '193.228.110.131',
         'database' => 'test2',
         'username' => 'test2',
         'password' => 'DxhwsBpswfTYn82c',
