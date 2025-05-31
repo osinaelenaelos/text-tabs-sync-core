@@ -27,7 +27,7 @@ const Dashboard = () => {
   // Данные по умолчанию пока API не загружен
   const stats = dashboardData?.stats ? [
     {
-      title: "Всего пользователей2",
+      title: "Всего пользователей",
       value: dashboardData.stats.totalUsers.toLocaleString(),
       description: "+12% за месяц",
       icon: Users,
@@ -146,7 +146,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UsersChart data={dashboardData?.usersChart} />
+            <UsersChart />
           </CardContent>
         </Card>
 
@@ -158,7 +158,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ActivityChart data={dashboardData?.activityChart} />
+            <ActivityChart />
           </CardContent>
         </Card>
       </div>
@@ -172,7 +172,7 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RecentUsers data={dashboardData?.recentUsers} />
+          <RecentUsers />
         </CardContent>
       </Card>
     </div>
