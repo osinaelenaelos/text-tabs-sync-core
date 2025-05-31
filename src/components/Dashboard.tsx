@@ -5,12 +5,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { UsersChart } from './UsersChart';
 import { ActivityChart } from './ActivityChart';
 import { RecentUsers } from './RecentUsers';
+import { useApi } from '@/hooks/useApi';
+import { dashboardService } from '@/services/dashboardService';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
-  const stats = [
+  // Получаем данные дашборда через API
+  const { data: dashboardData, loading, error } = useApi(
+    () => dashboardService.getDashboardData(),
+    []
+  );
+
+  if (error) {
+    toast({
+      title: "Ошибка",
+      description: `Не удалось загрузить данные дашборда: ${error}`,
+      variant: "destructive",
+    });
+  }
+
+  // Данные по умолчанию пока API не загружен
+  const stats = dashboardData?.stats ? [
     {
       title: "Всего пользователей",
-      value: "2,847",
+      value: dashboardData.stats.totalUsers.toLocaleString(),
       description: "+12% за месяц",
       icon: Users,
       color: "text-blue-600",
@@ -18,15 +36,15 @@ const Dashboard = () => {
     },
     {
       title: "Подтвержденных",
-      value: "2,341",
-      description: "82% от общего числа",
+      value: dashboardData.stats.verifiedUsers.toLocaleString(),
+      description: `${Math.round((dashboardData.stats.verifiedUsers / dashboardData.stats.totalUsers) * 100)}% от общего числа`,
       icon: Activity,
       color: "text-green-600",
       bgColor: "bg-green-50"
     },
     {
       title: "Текстовых страниц",
-      value: "18,429",
+      value: dashboardData.stats.totalPages.toLocaleString(),
       description: "+284 сегодня",
       icon: FileText,
       color: "text-purple-600",
@@ -34,8 +52,42 @@ const Dashboard = () => {
     },
     {
       title: "Активность",
-      value: "+23%",
+      value: `+${dashboardData.stats.activityPercent}%`,
       description: "За последнюю неделю",
+      icon: TrendingUp,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    }
+  ] : [
+    // Заглушки для loading состояния
+    {
+      title: "Всего пользователей",
+      value: "...",
+      description: "Загрузка...",
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Подтвержденных",
+      value: "...",
+      description: "Загрузка...",
+      icon: Activity,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Текстовых страниц",
+      value: "...",
+      description: "Загрузка...",
+      icon: FileText,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
+    },
+    {
+      title: "Активность",
+      value: "...",
+      description: "Загрузка...",
       icon: TrendingUp,
       color: "text-orange-600",
       bgColor: "bg-orange-50"
@@ -51,6 +103,13 @@ const Dashboard = () => {
           Обзор системы "Текстовые вкладки"
         </p>
       </div>
+
+      {/* Loading indicator */}
+      {loading && (
+        <div className="flex justify-center items-center py-4">
+          <div className="text-muted-foreground">Загрузка данных...</div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -87,7 +146,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UsersChart />
+            <UsersChart data={dashboardData?.usersChart} />
           </CardContent>
         </Card>
 
@@ -99,7 +158,7 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ActivityChart />
+            <ActivityChart data={dashboardData?.activityChart} />
           </CardContent>
         </Card>
       </div>
@@ -113,7 +172,7 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RecentUsers />
+          <RecentUsers data={dashboardData?.recentUsers} />
         </CardContent>
       </Card>
     </div>

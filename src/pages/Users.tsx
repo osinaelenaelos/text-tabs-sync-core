@@ -20,53 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useApi } from '@/hooks/useApi';
+import { userService, UserFilters } from '@/services/userService';
+import { toast } from '@/components/ui/use-toast';
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const users = [
-    {
-      id: 1,
-      email: 'user1@example.com',
-      status: 'verified',
-      createdAt: '2024-01-15',
-      pagesCount: 12,
-      lastActive: '2024-01-30'
-    },
-    {
-      id: 2,
-      email: 'user2@example.com',
-      status: 'pending',
-      createdAt: '2024-01-14',
-      pagesCount: 3,
-      lastActive: '2024-01-29'
-    },
-    {
-      id: 3,
-      email: 'user3@example.com',
-      status: 'verified',
-      createdAt: '2024-01-14',
-      pagesCount: 8,
-      lastActive: '2024-01-28'
-    },
-    {
-      id: 4,
-      email: 'user4@example.com',
-      status: 'verified',
-      createdAt: '2024-01-13',
-      pagesCount: 15,
-      lastActive: '2024-01-30'
-    },
-    {
-      id: 5,
-      email: 'user5@example.com',
-      status: 'pending',
-      createdAt: '2024-01-13',
-      pagesCount: 1,
-      lastActive: '2024-01-25'
-    }
-  ];
+  // Получаем данные пользователей через API
+  const { data: usersData, loading, error, refetch } = useApi(
+    () => userService.getUsers({
+      search: searchTerm || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined
+    }),
+    [searchTerm, statusFilter]
+  );
+
+  const users = usersData?.users || [];
+  const totalUsers = usersData?.total || 0;
 
   const getStatusBadge = (status: string) => {
     if (status === 'verified') {
@@ -79,11 +51,21 @@ const Users = () => {
     return email.substring(0, 2).toUpperCase();
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+  };
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+  };
+
+  if (error) {
+    toast({
+      title: "Ошибка",
+      description: `Не удалось загрузить пользователей: ${error}`,
+      variant: "destructive",
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -108,12 +90,12 @@ const Users = () => {
           <Input
             placeholder="Поиск по email..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-10"
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={handleStatusFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Статус" />
           </SelectTrigger>
@@ -135,60 +117,69 @@ const Users = () => {
         </Button>
       </div>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-muted-foreground">Загрузка пользователей...</div>
+        </div>
+      )}
+
       {/* Users Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Пользователь</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead>Страниц</TableHead>
-              <TableHead>Регистрация</TableHead>
-              <TableHead>Последняя активность</TableHead>
-              <TableHead>Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id} className="hover:bg-muted/50">
-                <TableCell>
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{user.email}</p>
-                      <p className="text-sm text-muted-foreground">ID: {user.id}</p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {getStatusBadge(user.status)}
-                </TableCell>
-                <TableCell>
-                  <span className="font-medium">{user.pagesCount}</span>
-                </TableCell>
-                <TableCell>
-                  {new Date(user.createdAt).toLocaleDateString('ru-RU')}
-                </TableCell>
-                <TableCell>
-                  {new Date(user.lastActive).toLocaleDateString('ru-RU')}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">
-                    Действия
-                  </Button>
-                </TableCell>
+      {!loading && (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Пользователь</TableHead>
+                <TableHead>Статус</TableHead>
+                <TableHead>Страниц</TableHead>
+                <TableHead>Регистрация</TableHead>
+                <TableHead>Последняя активность</TableHead>
+                <TableHead>Действия</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">ID: {user.id}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(user.status)}
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-medium">{user.pagesCount}</span>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(user.createdAt).toLocaleDateString('ru-RU')}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(user.lastActive).toLocaleDateString('ru-RU')}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm">
+                      Действия
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Показано {filteredUsers.length} из {users.length} пользователей
+          Показано {users.length} из {totalUsers} пользователей
         </p>
         <div className="flex space-x-2">
           <Button variant="outline" size="sm" disabled>
